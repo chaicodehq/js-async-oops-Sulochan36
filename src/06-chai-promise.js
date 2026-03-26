@@ -74,16 +74,81 @@
  */
 export function orderChai(type, quantity) {
   // Your code here
+  const prices = { cutting: 10, special: 20, ginger: 15, masala: 25 };
+
+  return new Promise((resolve,reject)=> {
+    if (!prices.hasOwnProperty(type)) {
+      return reject(new Error("Yeh chai available nahi hai!"));
+    }
+
+    if (typeof quantity !== "number" || quantity <= 0) {
+      return reject(new Error("Kitni chai chahiye bhai?"));
+    }
+
+    setTimeout(()=>{
+      resolve({
+        type,
+        quantity,
+        total:prices[type]*quantity,});
+    },100);
+  });
 }
 
 export function checkIngredients(ingredient) {
+  const ingredients = ["tea", "milk", "sugar", "ginger", "cardamom"]
   // Your code here
+  return new Promise((resolve,reject)=>{
+    if(!ingredients.includes(ingredient)){
+      return reject(new Error(`${ingredient} khatam ho gaya!`));
+    }
+    else{
+      resolve({ ingredient, available: true });
+    }
+  })
 }
 
 export function prepareChaiWithTimeout(type, timeoutMs) {
   // Your code here
+  return new Promise((resolve,reject)=>{
+    const timeoutPromise = new Promise((_,rejectTimeout)=>{
+      setTimeout(()=>{
+        rejectTimeout(new Error("Bahut der ho gayi, chai nahi bani!"))
+      },timeoutMs);
+    });
+
+    Promise.race([
+      orderChai(type, 1),
+      timeoutPromise
+    ])
+    .then(resolve)
+    .catch(reject);
+  })
 }
 
 export function processChaiQueue(orders) {
   // Your code here
+  return new Promise((resolve)=>{
+    if (!Array.isArray(orders) || orders.length === 0) {
+      return resolve([]);
+    }
+
+    const results = [];
+    let completed = 0;
+
+    orders.forEach((order,index)=>{
+      orderChai(order.type,order.quantity)
+      .then((value)=>{
+        results[index] = { status: "fulfilled", value };
+      })
+        .catch((err) => {
+          results[index] = { status: "rejected", reason: err.message };
+        })
+        .finally(()=>{
+          completed++;
+          if (completed === orders.length) {
+            resolve(results);
+          }
+        })
+    })
+  })
 }
